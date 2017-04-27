@@ -10,10 +10,10 @@ Packet formating:
 '''
 
 #Normal imports
-import socket, threading, json, platform, ctypes, timer
+import socket, threading, json, platform, ctypes, timer, time
 
 #GUI Imports
-import tkinter, operator
+import tkinter, operator, webbrowser
 
 name = input("Enter User Name: ")
 port = 16500
@@ -72,7 +72,7 @@ inputList = []
 
 def guireadin():
     while len(inputList) == 0:
-        pass
+        time.sleep(1)
     return inputList.pop()
 
 def guiwriteout(out):
@@ -109,7 +109,7 @@ class GuiThread(threading.Thread):
 
         def updateRoom(self=self):
             self.room.config(text=str(room))
-            self.root.after(100, updateRoom)    
+            self.root.after(250, updateRoom)    
 
         updateRoom()
 
@@ -145,11 +145,18 @@ class GuiThread(threading.Thread):
         
     #Define message add function
     def addMessage(self, message):
-        tkinter.Label(self.canvasiframe, text=message, relief=tkinter.RIDGE, borderwidth=1, justify=tkinter.LEFT,anchor="w").pack(fill=tkinter.X)
+        labl = tkinter.Label(self.canvasiframe, text=message, relief=tkinter.RIDGE, borderwidth=1, justify=tkinter.LEFT,anchor="w")
+        labl.pack(fill=tkinter.X)
+        if not message.rfind("http") == -1:
+            url = message[message.rfind("http"):]
+            url = url.split(" ", 1)[0]
+            def cb(event=None):
+                webbrowser.open_new_tab(url)
+            labl.bind("<Button-1>", cb)
         region = (0,0,0,0)
         try:
             region=tuple(map(operator.add, self.canvas.bbox("all"), (0,0,0,40)))
-        except e:
+        except Exception as e:
             print(e)
         self.canvas.config(scrollregion=region)
         #self.canvasyscroll.scroll(region[3])
@@ -215,11 +222,10 @@ class OutputThread(threading.Thread):
                 if array[2] == room:
                     writeout(array[1] + " (" + array[2] + "):" + array[3])
             elif array[0] == "Event":
-                if array[3] == "pm" and array[4] == name:
+                if array[3] == "pm" and (array[4] == name or array[4] == name.replace(" ", "_")):
                     writeout(array[1] + " (" + array[2] + ") -> You: " + array[5])
                 elif array[3] == "bcast":
                     writeout(array[1] + " (" + "*" + "):" + array[4])
-
 
 #Comment out to not use GUI
 Gui = GuiThread()
